@@ -107,15 +107,34 @@ git push origin main
       └── forum-gateway (Spring Cloud Gateway)
 
 改造步骤：
-1. 阶段一：模块化重构（当前仓库）
-   git checkout -b refactor/prepare-microservices
-   将代码按领域划分模块
+1. 阶段一：创建多模块结构（在当前仓库）
+   git checkout -b refactor/maven-multi-module
+   创建父 POM 和各子模块骨架
+   forum-parent/
+     ├── pom.xml (父POM)
+     ├── forum-common/
+     ├── forum-user-module/
+     ├── forum-post-module/
+     ├── forum-comment-module/
+     └── forum-gateway/
 
-2. 阶段二：创建独立仓库
-   为每个微服务创建独立的 Git 仓库
+2. 阶段二：领域代码拆分
+   将现有代码按业务领域迁移到各子模块：
+   - 用户模块：AppUser, 认证相关
+   - 帖子模块：Post, 分类相关
+   - 评论模块：PostComment 相关
+   - 公共模块：共享工具类、配置、DTO
 
-3. 阶段三：逐步迁移
-   保留单体应用作为参考，新功能在微服务中开发
+3. 阶段三：模块依赖配置
+   配置模块间依赖关系
+   调整 application.yml 配置
+   统一依赖版本管理
+
+4. 阶段四：测试与验证
+   运行测试确保功能正常
+   git merge develop
+   git push origin refactor/maven-multi-module
+   创建 Pull Request 合并到 develop
 
 
 =======================================================
