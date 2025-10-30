@@ -99,11 +99,12 @@ git push origin main
     └── develop (开发分支)
 
 未来结构：微服务架构（Microservices）
-    forum-user-service      # 用户服务
-    forum-post-service      # 帖子服务
-    forum-comment-service   # 评论服务
-    forum-auth-service      # 认证服务
-    forum-gateway           # API 网关
+    forum-parent (Maven 多模块项目)
+      ├── forum-common (公共模块)
+      ├── forum-user-module (用户模块)
+      ├── forum-post-module (帖子模块)
+      ├── forum-comment-module (评论模块)
+      └── forum-gateway (Spring Cloud Gateway)
 
 改造步骤：
 1. 阶段一：模块化重构（当前仓库）
