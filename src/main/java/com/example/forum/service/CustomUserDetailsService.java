@@ -26,31 +26,31 @@ public class CustomUserDetailsService implements UserDetailsService {
         AppUser appUser;
         try {
             appUser = userService.findByUserName(username);
-            log.info("Loaded user by username: {}", appUser);
+            log.info("根据用户名加载用户: {}", appUser);
         } catch (Exception ex) {
-            log.error("Failed to query user {}, authentication aborted", username, ex);
+            log.error("查询用户 {} 失败，认证中止", username, ex);
             throw new InternalAuthenticationServiceException("Failed to query user information", ex);
         }
 
         if (appUser == null) {
-            log.warn("User not found: {}", username);
+            log.warn("用户不存在: {}", username);
             throw new UsernameNotFoundException("User not found: " + username);
         }
 
         if (!StringUtils.hasText(appUser.getPassword())) {
-            log.error("User {} has empty password and cannot be authenticated", username);
+            log.error("用户 {} 密码为空，无法认证", username);
             throw new InternalAuthenticationServiceException("User password is not configured");
         }
 
         String role = appUser.getRole();
         if (!StringUtils.hasText(role)) {
-            log.error("User {} has no role configured", username);
+            log.error("用户 {} 未配置角色", username);
             throw new InternalAuthenticationServiceException("User role is not configured");
         }
 
         String grantedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
         List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(grantedRole));
-        log.info("User {} loaded with granted role {}", username, grantedRole);
+        log.info("用户 {} 加载完成，授予角色 {}", username, grantedRole);
         return new User(appUser.getUserName(), appUser.getPassword(), authorities);
     }
 }

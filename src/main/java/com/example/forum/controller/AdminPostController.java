@@ -49,7 +49,7 @@ public class AdminPostController {
                 keyword,
                 parsedCategoryId
         );
-        log.info("Admin {} queried posts status={}, page={}, size={}, keyword={}, categoryId={}",
+        log.info("管理员 {} 查询帖子列表 status={}, page={}, size={}, keyword={}, categoryId={}",
                 currentUser.getId(), status, page, size, keyword, categoryId);
         return result;
     }
@@ -59,7 +59,7 @@ public class AdminPostController {
         AppUser currentUser = resolveCurrentUser();
         ensureAdmin(currentUser);
         AdminPostSummary summary = postService.approvePost(postId);
-        log.info("Admin {} approved post {}", currentUser.getId(), postId);
+        log.info("管理员 {} 审核通过帖子 {}", currentUser.getId(), postId);
         return ResponseEntity.ok(summary);
     }
 
@@ -68,7 +68,7 @@ public class AdminPostController {
         AppUser currentUser = resolveCurrentUser();
         ensureAdmin(currentUser);
         AdminPostSummary summary = postService.rejectPost(postId);
-        log.info("Admin {} rejected post {}", currentUser.getId(), postId);
+        log.info("管理员 {} 拒绝帖子 {}", currentUser.getId(), postId);
         return ResponseEntity.ok(summary);
     }
 
@@ -77,7 +77,7 @@ public class AdminPostController {
         AppUser currentUser = resolveCurrentUser();
         ensureAdmin(currentUser);
         postService.deletePostAsAdmin(postId);
-        log.info("Admin {} deleted post {}", currentUser.getId(), postId);
+        log.info("管理员 {} 删除帖子 {}", currentUser.getId(), postId);
         return ResponseEntity.noContent().build();
     }
 
@@ -88,7 +88,7 @@ public class AdminPostController {
         ensureAdmin(currentUser);
         boolean withComments = Boolean.TRUE.equals(includeComments);
         AdminPostDetailView detail = postService.getAdminPost(postId, withComments);
-        log.info("Admin {} fetched post {} includeComments={}", currentUser.getId(), postId, withComments);
+        log.info("管理员 {} 查看帖子详情 {} includeComments={}", currentUser.getId(), postId, withComments);
         return detail;
     }
 

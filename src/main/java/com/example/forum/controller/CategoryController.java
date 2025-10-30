@@ -30,19 +30,19 @@ public class CategoryController {
     @GetMapping
     public PageResponse<CategoryResponse> pageCategories(@RequestParam(defaultValue = "1") Integer page,
                                                          @RequestParam(defaultValue = "10") Integer size) {
-        log.info("Listing categories page={}, size={}", page, size);
+        log.info("查询分类列表 page={}, size={}", page, size);
         return categoryService.pageCategories(page, size);
     }
 
     @GetMapping("/{categoryId}")
     public CategoryResponse getCategory(@PathVariable Integer categoryId) {
-        log.info("Fetching category id={}", categoryId);
+        log.info("获取分类详情 id={}", categoryId);
         return categoryService.getCategory(categoryId);
     }
 
     @PostMapping
     public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryRequest request) {
-        log.info("Creating category name={}", request.getName());
+        log.info("创建分类 name={}", request.getName());
         CategoryResponse response = categoryService.createCategory(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -50,14 +50,14 @@ public class CategoryController {
     @PutMapping("/{categoryId}")
     public ResponseEntity<CategoryResponse> updateCategory(@PathVariable Integer categoryId,
                                                            @Valid @RequestBody CategoryRequest request) {
-        log.info("Updating category id={}", categoryId);
+        log.info("更新分类 id={}", categoryId);
         CategoryResponse response = categoryService.updateCategory(categoryId, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{categoryId}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Integer categoryId) {
-        log.info("Deleting category id={}", categoryId);
+        log.info("删除分类 id={}", categoryId);
         categoryService.deleteCategory(categoryId);
         return ResponseEntity.noContent().build();
     }
