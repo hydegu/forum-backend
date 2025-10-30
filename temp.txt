@@ -1,0 +1,199 @@
+package com.example.forum.controller;
+
+import com.example.forum.dto.Code;
+import com.example.forum.dto.JwtProperties;
+import com.example.forum.dto.JwtUtils;
+import com.example.forum.dto.Result;
+import com.example.forum.dto.TokenRefreshRequest;
+import com.example.forum.entity.AppUser;
+import com.example.forum.entity.RefreshToken;
+import com.example.forum.service.RefreshTokenService;
+import com.example.forum.service.UserService;
+import com.example.forum.vo.LoginResponse;
+import com.example.forum.vo.UserProfileResponse;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.security.Principal;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@Slf4j
+@RequestMapping("/api")
+public class AuthController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private JwtProperties jwtProperties;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @GetMapping("/auth/me")
+    public ResponseEntity<UserProfileResponse> currentUser(Principal principal) {
+        log.info("开始拉取用户信息 {}", principal);
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        AppUser user = userService.findByUserName(principal.getName());
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return ResponseEntity.ok(new UserProfileResponse(
+                String.valueOf(user.getId()),
+                user.getUserName(),
+                user.getAvatarUrl(),
+                user.getRole(),
+                user.getEmail(),
+                user.getBio()
+        ));
+    }
+
+    @PostMapping("/auth/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshRequest request) {
+        if (request == null || !StringUtils.hasText(request.getRefreshToken())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Result.error(Code.BAD_REQUEST, "缂哄皯鍒锋柊浠ょ墝"));
+        }
+
+        String refreshTokenValue = request.getRefreshToken();
+        try {
+            Claims claims = JwtUtils.parseJWT(jwtProperties.getRefreshSecretKey(), refreshTokenValue);
+            if (!"refresh".equals(claims.get("type", String.class))) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Result.error(Code.UNAUTHORIZED, "令牌类型不匹配"));
+            Number userIdNumber = claims.get("userId", Number.class);
+            String username = claims.get("username", String.class);
+            if (userIdNumber == null || !StringUtils.hasText(username)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Result.error(Code.UNAUTHORIZED, "刷新令牌载荷不完整"));
+            }
+            Integer userId = userIdNumber.intValue();
+
+            Optional<RefreshToken> storedTokenOpt = refreshTokenService.findValidToken(refreshTokenValue);
+            if (storedTokenOpt.isEmpty() || !storedTokenOpt.get().getUserId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Result.error(Code.UNAUTHORIZED, "鍒锋柊浠ょ墝鏃犳晥鎴栧凡杩囨湡"));
+            }
+
+            AppUser user = userService.findByUserName(username);
+            if (user == null || !userId.equals(user.getId())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Result.error(Code.UNAUTHORIZED, "用户信息不存在或已变更"));
+            }
+
+            refreshTokenService.revokeToken(refreshTokenValue);
+
+            Map<String, Object> accessClaims = new HashMap<>();
+            accessClaims.put("username", user.getUserName());
+            accessClaims.put("userId", user.getId());
+            accessClaims.put("roles", user.getRole());
+
+            String newAccessToken = JwtUtils.createJwt(
+                    jwtProperties.getUserSecretKey(),
+                    jwtProperties.getUserTtl(),
+                    accessClaims
+            );
+            RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId(), user.getUserName());
+
+            long accessMaxAge = Duration.ofMillis(jwtProperties.getUserTtl()).getSeconds();
+            long refreshMaxAge = Duration.ofMillis(jwtProperties.getRefreshTtl()).getSeconds();
+
+            ResponseCookie accessCookie = ResponseCookie.from(jwtProperties.getUserTokenName(), newAccessToken)
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(accessMaxAge > 0 ? accessMaxAge : -1)
+                    .sameSite("Lax")
+                    .build();
+
+            ResponseCookie refreshCookie = ResponseCookie.from(jwtProperties.getRefreshTokenName(), newRefreshToken.getToken())
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(refreshMaxAge > 0 ? refreshMaxAge : -1)
+                    .sameSite("Lax")
+                    .build();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                    .body(new LoginResponse(
+                            newAccessToken,
+                            newRefreshToken.getToken(),
+                            user.getRole(),
+                            Math.max(accessMaxAge, 0),
+                            Math.max(refreshMaxAge, 0)
+                    ));
+        } catch (JwtException ex) {
+            log.warn("鍒锋柊浠ょ墝瑙ｆ瀽澶辫触: {}", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Result.error(Code.UNAUTHORIZED, "鍒锋柊浠ょ墝鏃犳晥鎴栧凡杩囨湡"));
+        }
+    }
+
+    @PostMapping({"/auth/logout", "/logout"})
+    public ResponseEntity<?> logout(HttpServletRequest request,
+                                    @RequestBody(required = false) TokenRefreshRequest body) {
+        String refreshToken = body != null ? body.getRefreshToken() : null;
+        if (StringUtils.hasText(refreshToken)) {
+            refreshTokenService.revokeToken(refreshToken);
+        }
+
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (StringUtils.hasText(authHeader) && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            String token = authHeader.substring(7);
+            try {
+                Claims claims = JwtUtils.parseJWT(jwtProperties.getUserSecretKey(), token);
+                Number userIdNumber = claims.get("userId", Number.class);
+                if (userIdNumber != null) {
+                    refreshTokenService.revokeTokensByUser(userIdNumber.intValue());
+                }
+            } catch (JwtException ex) {
+                log.debug("璁块棶浠ょ墝瑙ｆ瀽澶辫触锛屽拷鐣ユ敞閿�鍒锋柊: {}", ex.getMessage());
+            }
+        }
+
+        ResponseCookie expiredAccess = ResponseCookie.from(jwtProperties.getUserTokenName(), "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+
+        ResponseCookie expiredRefresh = ResponseCookie.from(jwtProperties.getRefreshTokenName(), "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, expiredAccess.toString())
+                .header(HttpHeaders.SET_COOKIE, expiredRefresh.toString())
+                .body(Result.success(null));
+    }
+}

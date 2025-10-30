@@ -1,0 +1,124 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  application:
+    name: Forum
+  datasource:
+    url: jdbc:mysql://localhost:3306/forum_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 2241761576@qq.com
+    password: pgsebnylqujfdjec
+    properties: # 注意，qq邮箱要求发送时必须开启验证配置，否则报错
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true   # 465 端口用 SSL；如果改 587，用 starttls.enable
+      mail.smtp.starttls.enable: true
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:123456}
+      database: ${REDIS_DATABASE:0}
+com:
+  jwt:
+    user-secret-key: w0YCoWrhSQOlj5Z+H501Mw8gm4V8pF9D0xN51K1l9GI=
+    user-ttl: 7200000
+    user-token-name: authentication
+    refresh-secret-key: Z1h4k6pL8bQ2r7T1w5Y8n5H4a8L2q9S6f3D1v4M6x8R1u2W3y5K7p8V6z4B2N1
+    refresh-ttl: 604800000
+    refresh-token-name: refreshToken
+mybatis-plus:
+  configuration:
+    default-enum-type-handler: com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler
+    map-underscore-to-camel-case: true
+
+app:
+  upload:
+    directory: uploads
+    base-url: /uploads
+forum:
+  cache:
+    post-list-ttl: 180s
+    post-detail-ttl: 300s
+    comment-page-ttl: 120s
+    verification-code-ttl: 300s
+    send-limit-window: 600s
+    send-limit-max: 5
+  metrics:
+    flush-interval: 300000  # 5分钟 = 300000ms，Redis计数器同步到数据库的间隔
+  trending:
+    refresh-interval: 600000  # 10分钟 = 600000ms，热门帖子排行榜刷新间隔
+
+# Actuator 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        # 暴露的端点列表
+        include: health,info,metrics,prometheus,env,loggers,caches,threaddump,heapdump
+      base-path: /actuator
+  endpoint:
+    health:
+      # 健康检查详情显示策略（已授权时显示）
+      show-details: when-authorized
+      show-components: when-authorized
+    prometheus:
+      # 启用 Prometheus 端点
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        # 启用 Prometheus 指标导出
+        enabled: true
+    tags:
+      # 全局标签
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active:default}
+    distribution:
+      # 直方图配置
+      percentiles-histogram:
+        "[http.server.requests]": true
+      # SLO（服务水平目标）配置，单位：秒
+      slo:
+        "[http.server.requests]":
+          - 0.05
+          - 0.1
+          - 0.2
+          - 0.5
+          - 1
+          - 2
+  info:
+    # 应用信息配置
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+# 日志配置
+logging:
+  level:
+    # 日志级别配置
+    root: INFO
+    com.example.forum: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.baomidou.mybatisplus: DEBUG
+  pattern:
+    # 控制台日志格式
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId}] [%X{userId}] %-5level %logger{36} - %msg%n"
+  file:
+    # 日志文件配置
+    name: logs/forum.log
+    max-size: 50MB
+    max-history: 30

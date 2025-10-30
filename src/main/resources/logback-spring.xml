@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="forum"/>
+
+    <!-- 控制台 Appender（彩色输出） -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] [%X{traceId:-}] [%X{userId:-}] %cyan(%logger{36}) - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 应用日志文件 Appender -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/forum.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId}] [%X{userId}] %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/forum-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- JSON 格式日志 Appender（兼容 ELK 技术栈） -->
+    <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/forum-json.log</file>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"app":"${APP_NAME}"}</customFields>
+            <fieldNames>
+                <timestamp>timestamp</timestamp>
+                <version>[ignore]</version>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <includeMdcKeyName>requestMethod</includeMdcKeyName>
+            <includeMdcKeyName>requestUri</includeMdcKeyName>
+            <includeMdcKeyName>clientIp</includeMdcKeyName>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/forum-json-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 错误日志单独文件 -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/forum-error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{traceId}] [%X{userId}] %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/forum-error-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 异步 Appender 提升性能 -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <appender name="ASYNC_JSON" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="JSON_FILE"/>
+    </appender>
+
+    <!-- 日志记录器配置 -->
+    <logger name="com.example.forum" level="DEBUG"/>
+    <logger name="org.springframework.web" level="DEBUG"/>
+    <logger name="org.springframework.security" level="DEBUG"/>
+    <logger name="com.baomidou.mybatisplus" level="DEBUG"/>
+
+    <!-- SQL 日志 -->
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+
+    <!-- Redis 日志 -->
+    <logger name="org.springframework.data.redis" level="DEBUG"/>
+
+    <!-- 减少常见框架的日志噪音 -->
+    <logger name="org.apache.tomcat" level="INFO"/>
+    <logger name="org.apache.catalina" level="INFO"/>
+    <logger name="org.springframework.boot.autoconfigure" level="INFO"/>
+
+    <!-- 根日志记录器 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+        <appender-ref ref="ASYNC_JSON"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
+
+    <!-- 环境配置文件特定设置 -->
+    <springProfile name="dev">
+        <logger name="com.example.forum" level="DEBUG"/>
+    </springProfile>
+
+    <springProfile name="prod">
+        <logger name="com.example.forum" level="INFO"/>
+        <logger name="org.springframework.web" level="INFO"/>
+        <logger name="org.springframework.security" level="INFO"/>
+    </springProfile>
+
+</configuration>
