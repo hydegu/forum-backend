@@ -1,0 +1,80 @@
+# Spring Cloud Gateway 配置
+server:
+  port: 8080
+
+spring:
+  application:
+    name: forum-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        enabled: true
+      config:
+        server-addr: localhost:8848
+        file-extension: yaml
+    # Gateway 路由配置
+    gateway:
+      # 启用服务发现路由
+      discovery:
+        locator:
+          enabled: true
+          # 服务名小写
+          lower-case-service-id: true
+      # 路由规则
+      routes:
+        # 用户服务路由 - 认证相关
+        - id: user-auth-service
+          uri: lb://forum-user-service
+          predicates:
+            - Path=/api/login,/api/register,/api/send-verification-email,/api/validate-verification-code,/api/auth/**,/api/logout
+          filters:
+            - StripPrefix=0
+
+        # 用户服务路由 - 用户管理
+        - id: user-service
+          uri: lb://forum-user-service
+          predicates:
+            - Path=/api/users/**,/api/user/**,/api/admin/users/**
+          filters:
+            - StripPrefix=0
+
+        # 用户服务路由 - 上传
+        - id: upload-service
+          uri: lb://forum-user-service
+          predicates:
+            - Path=/api/upload/**
+          filters:
+            - StripPrefix=0
+
+        # 帖子服务路由
+        - id: post-service
+          uri: lb://forum-post-service
+          predicates:
+            - Path=/api/posts/**,/api/post/**,/api/categories/**,/api/admin/posts/**
+          filters:
+            - StripPrefix=0
+
+        # 评论服务路由
+        - id: comment-service
+          uri: lb://forum-comment-service
+          predicates:
+            - Path=/api/comments/**,/api/comment/**
+          filters:
+            - StripPrefix=0
+
+# Actuator 健康检查
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always
+
+# 日志配置
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.alibaba.cloud: DEBUG

@@ -1,0 +1,13 @@
+# Bootstrap 配置（优先加载）
+spring:
+  application:
+    name: forum-gateway
+  config:
+    import: optional:nacos:
+  cloud:
+    nacos:
+      config:
+        server-addr: localhost:8848
+        file-extension: yaml
+        group: DEFAULT_GROUP
+        refresh-enabled: true
