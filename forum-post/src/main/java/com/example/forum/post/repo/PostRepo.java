@@ -13,9 +13,12 @@ public interface PostRepo extends BaseMapper<Post> {
                   p.id, p.title, p.subtitle, p.author_id, p.status, p.heat,
                   p.images, p.created_at, p.updated_at,
                   p.view_count, p.like_count, p.comment_count, p.pinned, p.category_id,
-                  c.name AS category_name
+                  c.name AS category_name,
+                  u.username AS author_name,
+                  u.avatar_url AS author_avatar
                 FROM posts p
                 LEFT JOIN post_categories c ON c.id = p.category_id
+                LEFT JOIN users u ON u.id = p.author_id
                 <where>
                   <if test="authorId != null">
                     AND p.author_id = #{authorId}
@@ -38,7 +41,10 @@ public interface PostRepo extends BaseMapper<Post> {
             """)
     @Results(id = "PostSummaryMap", value = {
             @Result(column = "images", property = "images",
-                    typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
+                    typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class),
+            @Result(column = "author_name", property = "authorName"),
+            @Result(column = "author_avatar", property = "authorAvatar"),
+            @Result(column = "category_name", property = "categoryName")
     })
     Page<Post> selectPageSummaryWithAuthor(
             Page<Post> page,
@@ -51,9 +57,12 @@ public interface PostRepo extends BaseMapper<Post> {
             <script>
                 SELECT
                   p.*,
-                  c.name AS category_name
+                  c.name AS category_name,
+                  u.username AS author_name,
+                  u.avatar_url AS author_avatar
                 FROM posts p
                 LEFT JOIN post_categories c ON c.id = p.category_id
+                LEFT JOIN users u ON u.id = p.author_id
                 <where>
                   <if test="authorId != null">
                     AND p.author_id = #{authorId}
@@ -77,7 +86,10 @@ public interface PostRepo extends BaseMapper<Post> {
             """)
     @Results(id = "PostWithImagesMap", value = {
             @Result(column = "images", property = "images",
-                    typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
+                    typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class),
+            @Result(column = "author_name", property = "authorName"),
+            @Result(column = "author_avatar", property = "authorAvatar"),
+            @Result(column = "category_name", property = "categoryName")
     })
     Page<Post> selectPageWithAuthorAndCategory(
             Page<Post> page,
@@ -89,9 +101,12 @@ public interface PostRepo extends BaseMapper<Post> {
     @Select("""
             SELECT 
               p.*,
-              c.name AS category_name
+              c.name AS category_name,
+              u.username AS author_name,
+              u.avatar_url AS author_avatar
             FROM posts p
             LEFT JOIN post_categories c ON c.id = p.category_id
+            LEFT JOIN users u ON u.id = p.author_id
             WHERE p.id = #{postId}
             LIMIT 1
             """)
@@ -105,6 +120,17 @@ public interface PostRepo extends BaseMapper<Post> {
             """)
     int updateCommentCount(@Param("postId") Integer postId,
                            @Param("delta") int delta);
+
+    /**
+     * 更新帖子评论数为绝对值（与Redis保持一致）
+     */
+    @Update("""
+            UPDATE posts
+            SET comment_count = GREATEST(#{absoluteValue}, 0)
+            WHERE id = #{postId}
+            """)
+    int updateCommentCountAbsolute(@Param("postId") Integer postId,
+                                   @Param("absoluteValue") int absoluteValue);
 
     @Update("""
             UPDATE posts

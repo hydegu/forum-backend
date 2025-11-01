@@ -3,7 +3,6 @@ package com.example.forum.post.controller;
 import com.example.forum.common.dto.Result;
 import com.example.forum.common.enums.Code;
 import com.example.forum.post.entity.Post;
-import com.example.forum.post.repo.PostRepo;
 import com.example.forum.post.service.PostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 public class PostApiController {
 
     private final PostService postService;
-    private final PostRepo postRepo;
 
     /**
      * 检查帖子是否存在
@@ -40,19 +38,5 @@ public class PostApiController {
             return Result.error(Code.NOT_FOUND, "帖子不存在");
         }
         return Result.success(post.getAuthorId());
-    }
-
-    /**
-     * 更新帖子评论数
-     */
-    @PutMapping("/{postId}/comment-count")
-    public Result<Void> updateCommentCount(@PathVariable Integer postId,
-                                          @RequestParam("delta") Integer delta) {
-        int affected = postRepo.updateCommentCount(postId, delta);
-        if (affected > 0) {
-            return Result.success(null);
-        } else {
-            return Result.error(Code.NOT_FOUND, "帖子不存在或更新失败");
-        }
     }
 }

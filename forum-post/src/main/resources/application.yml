@@ -13,6 +13,9 @@ spring:
       config:
         server-addr: localhost:8848
         file-extension: yaml
+        # 禁用配置导入检查（如果只使用服务发现，不需要配置中心）
+        import-check:
+          enabled: false
   datasource:
     url: jdbc:mysql://localhost:3306/forum_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
@@ -44,6 +47,12 @@ management:
   endpoint:
     health:
       show-details: always
+
+# JWT配置（需要与用户服务使用相同的密钥以解析token）
+com:
+  jwt:
+    user-secret-key: ${JWT_USER_SECRET_KEY:w0YCoWrhSQOlj5Z+H501Mw8gm4V8pF9D0xN51K1l9GI=}
+    user-token-name: ${JWT_USER_TOKEN_NAME:authentication}
 
 # 日志配置
 logging:

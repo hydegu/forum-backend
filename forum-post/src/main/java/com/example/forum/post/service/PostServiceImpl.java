@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.forum.post.client.UserClient;
+import com.example.forum.post.client.CommentClient;
 import com.example.forum.post.dto.PostCreateRequest;
 import com.example.forum.post.entity.Author;
 import com.example.forum.post.entity.Post;
@@ -46,6 +47,7 @@ public class PostServiceImpl extends ServiceImpl<PostRepo, Post> implements Post
 
     private final PostLikeRepo postLikeRepo;
     private final UserClient userClient;
+    private final CommentClient commentClient;
     private final CategoryService categoryService;
     private final PostLikeService postLikeService;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -278,8 +280,18 @@ public class PostServiceImpl extends ServiceImpl<PostRepo, Post> implements Post
         LocalDateTime createdAtValue = Optional.ofNullable(post.getUpdatedAt()).orElse(post.getCreatedAt());
         String createdAt = toIso(createdAtValue);
         String submittedAt = toIso(post.getCreatedAt());
-        // TODO: 通过Feign调用评论服务获取评论列表
-        List<Object> comments = includeComments ? null : null;
+        // 通过Feign调用评论服务获取评论列表
+        List<Object> comments = null;
+        if (includeComments) {
+            try {
+                Result<com.example.forum.common.vo.PageResponse<Object>> result = commentClient.getComments(postId, 1, 50);
+                if (result != null && result.getResult() != null && result.getResult().getRecords() != null) {
+                    comments = result.getResult().getRecords();
+                }
+            } catch (Exception e) {
+                log.warn("调用评论服务获取评论列表失败: postId={}, error={}", postId, e.getMessage());
+            }
+        }
         return new AdminPostDetailView(
                 post.getId() != null ? String.valueOf(post.getId()) : null,
                 post.getTitle(),
@@ -314,10 +326,21 @@ public class PostServiceImpl extends ServiceImpl<PostRepo, Post> implements Post
         log.info("Admin deleted post {}", postId);
     }
 
+    /**
+     * 递增帖子浏览量（仅更新Redis增量，不更新MySQL）
+     * 
+     * 策略：使用 INCR 原子操作更新 Redis 增量，定时任务每5分钟持久化到 MySQL
+     * Redis Hash: post:metrics:{postId} -> {views: 增量值}
+     */
     private void incrementViewCount(Integer postId) {
-        String metricsKey = "post:metrics:" + postId;
-        redisTemplate.opsForHash().increment(metricsKey, "views", 1);
-        log.debug("递增帖子浏览量: postId={}", postId);
+        try {
+            String metricsKey = "post:metrics:" + postId;
+            // 使用原子 INCR 操作
+            redisTemplate.opsForHash().increment(metricsKey, "views", 1);
+            log.debug("增量递增帖子浏览量: postId={}, delta=+1 (MySQL将由定时任务同步)", postId);
+        } catch (Exception e) {
+            log.warn("更新浏览量失败: postId={}, error={}", postId, e.getMessage());
+        }
     }
 
     private boolean isAuthorFollowedBy(Integer authorId, Integer followerId) {
@@ -359,6 +382,19 @@ public class PostServiceImpl extends ServiceImpl<PostRepo, Post> implements Post
         Set<Integer> likedPostIds = postIds.isEmpty()
                 ? Collections.emptySet()
                 : new HashSet<>(postLikeRepo.findLikedPostIds(currentUserId, postIds));
+
+        // 同步批量查询的点赞关系到Redis缓存
+        if (!likedPostIds.isEmpty()) {
+            try {
+                for (Integer postId : likedPostIds) {
+                    String likesKey = "post:likes:" + postId;
+                    redisTemplate.opsForSet().add(likesKey, currentUserId.toString());
+                }
+                log.debug("批量查询点赞关系，已同步到Redis: userId={}, count={}", currentUserId, likedPostIds.size());
+            } catch (Exception e) {
+                log.warn("同步点赞关系到Redis失败: userId={}", currentUserId, e);
+            }
+        }
 
         Set<Integer> followedAuthorIds = Collections.emptySet();
         if (!authorIds.isEmpty()) {
@@ -525,17 +561,34 @@ public class PostServiceImpl extends ServiceImpl<PostRepo, Post> implements Post
         return plain.length() > 100 ? plain.substring(0, 100) + "..." : plain;
     }
 
+    /**
+     * 从 Redis Hash 获取指标值（增量模式）
+     * 
+     * Redis Hash结构：post:metrics:{postId} -> {views: +5, likes: +2, comments: +3}
+     * 策略：数据库值（基准） + Redis增量 = 最终显示值
+     * 
+     * @param postId 帖子ID
+     * @param field 字段名（views/likes/comments）
+     * @param dbValue 数据库中的基准值
+     * @return 指标最终值（基准值 + 增量）
+     */
     private int getMetricFromRedis(Integer postId, String field, Integer dbValue) {
         try {
             String metricsKey = "post:metrics:" + postId;
-            Object value = redisTemplate.opsForHash().get(metricsKey, field);
+            Object deltaObj = redisTemplate.opsForHash().get(metricsKey, field);
 
+            // 数据库基准值
             int baseValue = Optional.ofNullable(dbValue).orElse(0);
-
-            if (value != null) {
-                int delta = Integer.parseInt(value.toString());
-                return baseValue + delta;
+            
+            if (deltaObj != null) {
+                // Redis中有增量，加到基准值上
+                int delta = Integer.parseInt(deltaObj.toString());
+                int finalValue = Math.max(0, baseValue + delta);
+                log.debug("计算指标值: postId={}, field={}, base={}, delta={}, final={}", 
+                         postId, field, baseValue, delta, finalValue);
+                return finalValue;
             } else {
+                // Redis中没有增量，直接返回数据库值
                 return baseValue;
             }
         } catch (Exception e) {

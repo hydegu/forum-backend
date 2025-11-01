@@ -7,6 +7,7 @@ import com.example.forum.user.repo.UserFollowRepo;
 import com.example.forum.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -23,6 +24,7 @@ public class UserApiController {
 
     private final UserService userService;
     private final UserFollowRepo userFollowRepo;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 根据用户ID获取用户信息
@@ -111,11 +113,27 @@ public class UserApiController {
 
     /**
      * 批量查询关注关系，返回已关注的用户ID列表
+     * 查询后会同步数据到Redis缓存
      */
     @GetMapping("/{followerId}/following/ids")
     public Result<List<Integer>> getFollowedUserIds(@PathVariable Integer followerId,
                                                     @RequestParam("followeeIds") Collection<Integer> followeeIds) {
         List<Integer> followedIds = userFollowRepo.findFolloweeIds(followerId, followeeIds);
+        
+        // 同步查询结果到Redis缓存
+        if (!followedIds.isEmpty()) {
+            try {
+                String followsKey = "user:follows:" + followerId;
+                String[] followeeIdsArray = followedIds.stream()
+                        .map(String::valueOf)
+                        .toArray(String[]::new);
+                redisTemplate.opsForSet().add(followsKey, (Object[]) followeeIdsArray);
+                log.debug("批量查询关注关系，已同步到Redis: followerId={}, count={}", followerId, followedIds.size());
+            } catch (Exception e) {
+                log.warn("同步关注关系到Redis失败: followerId={}", followerId, e);
+            }
+        }
+        
         return Result.success(followedIds);
     }
 

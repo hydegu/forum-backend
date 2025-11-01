@@ -43,6 +43,17 @@ public class UserFollowServiceImpl extends ServiceImpl<UserFollowRepo, UserFollo
         String followsKey = "user:follows:" + followerId;
         String followersKey = "user:followers:" + followeeId;
 
+        // 先检查MySQL是否已存在关注关系
+        UserFollow existing = userFollowRepo.findRelation(followerId, followeeId);
+        if (existing != null) {
+            // MySQL中已存在，同步到Redis
+            redisTemplate.opsForSet().add(followsKey, followeeId.toString());
+            redisTemplate.opsForSet().add(followersKey, followerId.toString());
+            log.debug("关注关系已存在于MySQL，已同步到Redis: followerId={}, followeeId={}", followerId, followeeId);
+            return true;
+        }
+
+        // MySQL中不存在，尝试添加到Redis
         Long added = redisTemplate.opsForSet().add(followsKey, followeeId.toString());
 
         if (Boolean.TRUE.equals(added != null && added > 0)) {
@@ -68,7 +79,17 @@ public class UserFollowServiceImpl extends ServiceImpl<UserFollowRepo, UserFollo
                 throw e;
             }
         } else {
-            log.debug("用户已关注: followerId={}, followeeId={}", followerId, followeeId);
+            // Redis中已存在但MySQL不存在（理论上不应该发生），重新检查MySQL并同步
+            existing = userFollowRepo.findRelation(followerId, followeeId);
+            if (existing == null) {
+                log.warn("Redis中存在但MySQL中不存在，重新插入MySQL: followerId={}, followeeId={}", followerId, followeeId);
+                UserFollow relation = new UserFollow()
+                        .setFollowerId(followerId)
+                        .setFolloweeId(followeeId)
+                        .setCreatedAt(LocalDateTime.now());
+                userFollowRepo.insert(relation);
+            }
+            log.debug("关注关系已存在: followerId={}, followeeId={}", followerId, followeeId);
             return true;
         }
     }
