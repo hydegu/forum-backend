@@ -1,0 +1,16 @@
+# Bootstrap 配置（优先加载）
+# 用于配置 Nacos 配置中心
+spring:
+  application:
+    name: forum-user-service
+  config:
+    import: optional:nacos:
+  cloud:
+    nacos:
+      config:
+        server-addr: localhost:8848
+        file-extension: yaml
+        # 配置分组
+        group: DEFAULT_GROUP
+        # 配置刷新
+        refresh-enabled: true
