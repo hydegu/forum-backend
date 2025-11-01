@@ -65,7 +65,7 @@ public class UserController {
 
     @PostMapping("/api/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest){
-        log.info("Received login request: {}", loginRequest);
+        log.info("收到登录请求: {}", loginRequest);
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -154,7 +154,7 @@ public class UserController {
                 }
             }
         } catch (RuntimeException e) {
-            log.error("Registration failed, request body: {}", request);
+            log.error("注册失败, 请求体: {}", request);
             throw new RuntimeException(e);
         }
     }
@@ -225,7 +225,7 @@ public class UserController {
             Optional<String> codeOptional = verificationCodeService.get(email);
             return codeOptional.filter(code -> code.equals(usercode)).isPresent();
         }catch (Exception e){
-            log.error("Error while validating email verification code");
+            log.error("验证邮箱验证码时发生错误");
             throw new RuntimeException();
         }
     }

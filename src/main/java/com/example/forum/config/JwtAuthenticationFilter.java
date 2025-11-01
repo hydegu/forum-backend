@@ -44,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             token = resolveTokenFromCookie(request);
         }
         if (log.isDebugEnabled()) {
-            log.debug("Resolved JWT token: {}", token != null ? maskToken(token) : "null");
+            log.debug("已解析 JWT token: {}", token != null ? maskToken(token) : "null");
         }
         if (token != null) {
             try {

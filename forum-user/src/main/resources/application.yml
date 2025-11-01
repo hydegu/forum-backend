@@ -1,0 +1,92 @@
+# 用户微服务配置
+server:
+  port: 8081
+
+spring:
+  application:
+    name: forum-user-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        # 服务注册到 Nacos
+        enabled: true
+      config:
+        server-addr: localhost:8848
+        # 配置文件格式
+        file-extension: yaml
+        # 禁用配置导入检查（如果只使用服务发现，不需要配置中心）
+        import-check:
+          enabled: false
+        # 命名空间（可选）
+        # namespace: dev
+  datasource:
+    url: jdbc:mysql://localhost:3306/forum_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 2241761576@qq.com
+    password: pgsebnylqujfdjec
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
+      mail.smtp.starttls.enable: true
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:123456}
+      database: ${REDIS_DATABASE:0}
+
+# JWT配置
+com:
+  jwt:
+    user-secret-key: w0YCoWrhSQOlj5Z+H501Mw8gm4V8pF9D0xN51K1l9GI=
+    user-ttl: 7200000
+    user-token-name: authentication
+    refresh-secret-key: Z1h4k6pL8bQ2r7T1w5Y8n5H4a8L2q9S6f3D1v4M6x8R1u2W3y5K7p8V6z4B2N1
+    refresh-ttl: 604800000
+    refresh-token-name: refreshToken
+
+# MyBatis-Plus配置
+mybatis-plus:
+  configuration:
+    default-enum-type-handler: com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.example.forum.user.entity
+
+# 上传配置
+app:
+  upload:
+    directory: uploads
+    base-url: /uploads
+
+# 缓存配置
+forum:
+  cache:
+    verification-code-ttl: PT5M
+    send-limit-window: PT10M
+    send-limit-max: 5
+
+# Actuator 健康检查
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# 日志配置
+logging:
+  level:
+    com.example.forum.user: INFO
+    com.alibaba.cloud: DEBUG
+    com.baomidou.mybatisplus: DEBUG

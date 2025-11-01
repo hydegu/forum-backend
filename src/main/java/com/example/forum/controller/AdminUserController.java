@@ -33,7 +33,7 @@ public class AdminUserController {
         AppUser current = resolveCurrentUser();
         ensureAdmin(current);
         PageResponse<AdminUserSummary> result = userService.pageAdminUsers(page, size, keyword, status);
-        log.info("Admin user {} fetched users page={}, size={}, keyword={}, status={}", current.getId(), page, size, keyword, status);
+        log.info("管理员 {} 查询用户列表 page={}, size={}, keyword={}, status={}", current.getId(), page, size, keyword, status);
         return result;
     }
 
@@ -42,7 +42,7 @@ public class AdminUserController {
         AppUser current = resolveCurrentUser();
         ensureAdmin(current);
         AdminUserSummary summary = userService.banUser(userId);
-        log.info("Admin {} banned user {}", current.getUserName(), userId);
+        log.info("管理员 {} 封禁用户 {}", current.getUserName(), userId);
         return ResponseEntity.ok(summary);
     }
 
