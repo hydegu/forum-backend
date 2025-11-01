@@ -13,6 +13,9 @@ spring:
       config:
         server-addr: localhost:8848
         file-extension: yaml
+        # 禁用配置导入检查（如果只使用服务发现，不需要配置中心）
+        import-check:
+          enabled: false
     # Gateway 路由配置
     gateway:
       # 启用服务发现路由
@@ -31,6 +34,30 @@ spring:
           filters:
             - StripPrefix=0
 
+        # 帖子服务路由 - 用户的帖子（必须在user-service之前，避免被/api/users/**拦截）
+        - id: post-service-user-posts
+          uri: lb://forum-post-service
+          predicates:
+            - Path=/api/users/me/posts,/api/users/me/posts/**
+          filters:
+            - StripPrefix=0
+
+        # 用户服务路由 - 管理接口（数据同步）
+        - id: user-admin-sync-service
+          uri: lb://forum-user-service
+          predicates:
+            - Path=/api/admin/sync/follows,/api/admin/sync/follows/**
+          filters:
+            - StripPrefix=0
+
+        # 用户服务路由 - 用户关注
+        - id: user-follow-service
+          uri: lb://forum-user-service
+          predicates:
+            - Path=/api/users/*/follow,/api/users/me/followings,/api/users/me/followings/**
+          filters:
+            - StripPrefix=0
+
         # 用户服务路由 - 用户管理
         - id: user-service
           uri: lb://forum-user-service
@@ -43,23 +70,39 @@ spring:
         - id: upload-service
           uri: lb://forum-user-service
           predicates:
-            - Path=/api/upload/**
+            - Path=/api/upload/**,/api/uploads/**
           filters:
             - StripPrefix=0
 
-        # 帖子服务路由
+        # 评论服务路由 - 帖子下的评论（需要放在帖子路由之前，避免路径冲突）
+        - id: comment-service-posts
+          uri: lb://forum-comment-service
+          predicates:
+            - Path=/api/posts/*/comments/**
+          filters:
+            - StripPrefix=0
+
+        # 评论服务路由 - 普通评论接口
+        - id: comment-service
+          uri: lb://forum-comment-service
+          predicates:
+            - Path=/api/comments/**
+          filters:
+            - StripPrefix=0
+
+        # 帖子服务路由 - 管理接口（数据同步，必须在通用post-service之前）
+        - id: post-admin-sync-service
+          uri: lb://forum-post-service
+          predicates:
+            - Path=/api/admin/posts/sync/**
+          filters:
+            - StripPrefix=0
+
+        # 帖子服务路由（放在评论路由之后）
         - id: post-service
           uri: lb://forum-post-service
           predicates:
             - Path=/api/posts/**,/api/post/**,/api/categories/**,/api/admin/posts/**
-          filters:
-            - StripPrefix=0
-
-        # 评论服务路由
-        - id: comment-service
-          uri: lb://forum-comment-service
-          predicates:
-            - Path=/api/comments/**,/api/comment/**
           filters:
             - StripPrefix=0
 

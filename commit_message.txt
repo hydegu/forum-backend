@@ -1,0 +1,17 @@
+feat: 完成单体项目到微服务架构的迁移和Docker化
+
+主要变更：
+- 实现Spring Cloud微服务架构（Nacos + Gateway）
+- 添加Docker Compose配置（MySQL + Redis + Nacos）
+- 优化缓存一致性和数据同步机制
+- 增强安全配置和跨域处理
+- 添加管理员功能和密码加密工具
+- 完善文档（快速启动、Docker配置等）
+
+技术栈：
+- Spring Boot 3.2.12
+- Spring Cloud 2023.0.4
+- Spring Cloud Alibaba 2023.0.3.2
+- Docker Compose 3.8
+- Nacos 2.3.0
+

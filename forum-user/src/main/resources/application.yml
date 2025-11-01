@@ -15,6 +15,9 @@ spring:
         server-addr: localhost:8848
         # 配置文件格式
         file-extension: yaml
+        # 禁用配置导入检查（如果只使用服务发现，不需要配置中心）
+        import-check:
+          enabled: false
         # 命名空间（可选）
         # namespace: dev
   datasource:

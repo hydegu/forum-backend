@@ -36,6 +36,10 @@ build/
 uploads/
 logs/
 *.log
+temp.txt
+*.ps1
+*.bat
+*.sh
 
 ### Environment ###
 .env
@@ -46,6 +50,21 @@ application-dev.yml
 ### Database ###
 *.db
 *.sqlite
+*.sql
+
+### Docker ###
+mysql/
+monitoring/
+
+### Documentation (keep structured docs) ###
+*_SUMMARY.md
+*_ANALYSIS.md
+*_FIX*.md
+*_GUIDE.md
+*_TROUBLESHOOTING.md
+NACOS_*.md
+CLAUDE.md
+API_AGENT_PROMPT.md
 
 ### OS ###
 .DS_Store
