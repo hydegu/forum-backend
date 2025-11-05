@@ -1,6 +1,7 @@
 package com.example.forum.post.client;
 
 import com.example.forum.common.dto.Result;
+import com.example.forum.post.client.fallback.UserClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,7 +15,7 @@ import java.util.Map;
  * 用户服务Feign客户端
  * 用于帖子服务调用用户服务获取用户信息
  */
-@FeignClient(name = "forum-user-service", path = "/api")
+@FeignClient(name = "forum-user-service", path = "/api", fallback = UserClientFallback.class)
 public interface UserClient {
 
     /**

@@ -1,5 +1,6 @@
 package com.example.forum.comment.client;
 
+import com.example.forum.comment.client.fallback.PostClientFallback;
 import com.example.forum.common.dto.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  * 帖子服务Feign客户端
  * 用于评论服务调用帖子服务接口
  */
-@FeignClient(name = "forum-post-service", path = "/api/posts")
+@FeignClient(name = "forum-post-service", path = "/api/posts", fallback = PostClientFallback.class)
 public interface PostClient {
 
     /**
