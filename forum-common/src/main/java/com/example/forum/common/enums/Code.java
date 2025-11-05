@@ -9,7 +9,8 @@ public enum Code {
     GONE(410, "资源已失效"),
     CONFLICT(409, "请求冲突"),
     INTERNAL_SERVER_ERROR(500, "服务器内部错误"),
-    TOO_MANY_REQUESTS(429,"过于频繁");
+    TOO_MANY_REQUESTS(429,"过于频繁"),
+    SERVICE_UNAVAILABLE(503,"服务不可用");
 
     private final int code;
     private final String message;

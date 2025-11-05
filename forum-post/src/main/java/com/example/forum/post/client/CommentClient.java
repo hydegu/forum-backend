@@ -1,6 +1,7 @@
 package com.example.forum.post.client;
 
 import com.example.forum.common.dto.Result;
+import com.example.forum.post.client.fallback.CommentClientFallback;
 import com.example.forum.post.vo.AdminPostDetailView;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +14,7 @@ import java.util.List;
  * 评论服务Feign客户端
  * 用于帖子服务调用评论服务获取评论列表
  */
-@FeignClient(name = "forum-comment-service", path = "/api/comments")
+@FeignClient(name = "forum-comment-service", path = "/api/comments", fallback = CommentClientFallback.class)
 public interface CommentClient {
 
     /**

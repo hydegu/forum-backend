@@ -4,7 +4,10 @@
       "Bash(./mvnw clean:*)",
       "Bash(./mvnw compile:*)",
       "Bash(sed:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
