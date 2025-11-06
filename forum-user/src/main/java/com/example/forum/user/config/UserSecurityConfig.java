@@ -32,8 +32,6 @@ public class UserSecurityConfig {
                                                    AuthenticationManager authenticationManager) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                // CORS 在 Gateway 层面处理，后端微服务不需要配置 CORS
-                .cors(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationManager(authenticationManager)
                 .authorizeHttpRequests(authorize -> authorize
