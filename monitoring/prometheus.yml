@@ -1,0 +1,75 @@
+# Prometheus Configuration for Forum Application
+
+global:
+  scrape_interval: 15s # Default scrape interval
+  evaluation_interval: 15s # Evaluate rules every 15 seconds
+  scrape_timeout: 10s
+
+  # Attach these labels to any time series or alerts when communicating with external systems
+  external_labels:
+    monitor: 'forum-monitor'
+    environment: 'dev'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alert_rules.yml"
+  # - "recording_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+          app: 'prometheus'
+
+  # Forum Spring Boot application
+  - job_name: 'forum-app'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['host.docker.internal:8080']  # Use host.docker.internal for Docker on Windows/Mac
+        labels:
+          application: 'forum'
+          environment: 'dev'
+          instance: 'forum-app-1'
+
+  # Additional instances (for load-balanced setup)
+  # - job_name: 'forum-app-2'
+  #   metrics_path: '/actuator/prometheus'
+  #   static_configs:
+  #     - targets: ['forum-app-2:8080']
+  #       labels:
+  #         application: 'forum'
+  #         environment: 'dev'
+  #         instance: 'forum-app-2'
+
+  # MySQL exporter (if using mysql-exporter)
+  # - job_name: 'mysql'
+  #   static_configs:
+  #     - targets: ['mysql-exporter:9104']
+  #       labels:
+  #         instance: 'mysql-db'
+
+  # Redis exporter (if using redis-exporter)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+  #       labels:
+  #         instance: 'redis-cache'
+
+  # Node exporter for system metrics (CPU, memory, disk, etc.)
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         instance: 'server-1'

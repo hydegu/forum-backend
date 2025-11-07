@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: forum-comment-service
+  config:
+    server-addr: localhost:8848
+    import:
+      - nacos:forum-comment-service.yaml?refresh=true
+      - nacos:forum-common.yaml?refresh=true
+  cloud:
+    nacos:
+      serverAddr: 127.0.0.1:8848
+      discovery:
+        # 服务注册到 Nacos
+        enabled: true
+    sentinel:
+      transport:
+        port: 8720           # 端口改成 8720，与 post 服务区分
+        dashboard: localhost:8858
+      eager: true
+    openfeign:
+      sentinel:
+        enabled: true  # 开启 Feign 的 Sentinel 支持
+
+# Feign 超时配置
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 3000    # 连接超时 3秒
+        readTimeout: 5000       # 读取超时 5秒

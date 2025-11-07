@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: forum-gateway
+  config:
+    server-addr: localhost:8848
+    import:
+      - nacos:forum-gateway.yaml?refresh=true
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      discovery:
+        # 服务注册到 Nacos
+        enabled: true
+    sentinel:
+      transport:
+        port: 8719
+        dashboard: localhost:8858
