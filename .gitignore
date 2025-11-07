@@ -69,3 +69,11 @@ API_AGENT_PROMPT.md
 ### OS ###
 .DS_Store
 Thumbs.db
+
+### Release ###
+release/
+*.tar.gz
+*.zip
+
+### Claude ###
+.claude/settings.local.json
