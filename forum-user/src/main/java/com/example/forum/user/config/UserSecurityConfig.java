@@ -75,6 +75,4 @@ public class UserSecurityConfig {
         return builder.build();
     }
 
-    // CORS 配置已移除 - 在微服务架构中，CORS 应该只在 Gateway 层面处理
-    // Gateway 已经配置了 CORS（GatewayCorsConfig），后端微服务不需要重复配置
 }

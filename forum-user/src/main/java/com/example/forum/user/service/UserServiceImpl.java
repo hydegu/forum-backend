@@ -60,7 +60,7 @@ public class UserServiceImpl extends ServiceImpl<UserRepo, AppUser> implements U
     @Override
     public Optional<AppUser> findByIdentifier(String identifier) {
         if (!StringUtils.hasText(identifier)) {
-            log.warn("Missing identifier, cannot query user");
+            log.warn("未找到用户");
             return Optional.empty();
         }
         String value = identifier.trim();
@@ -76,7 +76,7 @@ public class UserServiceImpl extends ServiceImpl<UserRepo, AppUser> implements U
     @CacheEvict(cacheNames = "users:profile", key = "#user.userName()")
     public void updatePassword(AppUser user, String rawPassword) {
         if (user == null || user.getId() == null) {
-            throw new IllegalArgumentException("Cannot update password: user information incomplete");
+            throw new IllegalArgumentException("用户信息不完整");
         }
         String encoded = passwordEncoder.encode(rawPassword);
         user.setPassword(encoded);
@@ -84,10 +84,10 @@ public class UserServiceImpl extends ServiceImpl<UserRepo, AppUser> implements U
         user.setUpdatedAt(now);
         int affected = userRepo.updateById(user);
         if (affected <= 0) {
-            log.error("Failed to update user password, userId={}", user.getId());
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update user password");
+            log.error("加载密码失败, userId={}", user.getId());
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "加载密码失败");
         }
-        log.info("User password updated, userId={}", user.getId());
+        log.info("密码更新成功, userId={}", user.getId());
     }
 
     @Override
