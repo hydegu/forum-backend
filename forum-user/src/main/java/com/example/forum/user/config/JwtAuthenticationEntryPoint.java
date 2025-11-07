@@ -29,7 +29,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         Map<String, Object> body = new HashMap<>();
         body.put("code", HttpServletResponse.SC_UNAUTHORIZED);
-        body.put("message", "Authentication required or token expired");
+        body.put("message", "验证失败");
 
         response.getWriter().write(OBJECT_MAPPER.writeValueAsString(body));
         response.getWriter().flush();

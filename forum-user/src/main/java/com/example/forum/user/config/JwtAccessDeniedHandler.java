@@ -29,7 +29,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
 
         Map<String, Object> body = new HashMap<>();
         body.put("code", HttpServletResponse.SC_FORBIDDEN);
-        body.put("message", "Access denied for current user role");
+        body.put("message", "当前用户没有权限访问");
 
         response.getWriter().write(OBJECT_MAPPER.writeValueAsString(body));
         response.getWriter().flush();
