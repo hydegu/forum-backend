@@ -32,8 +32,6 @@ public class UserSecurityConfig {
                                                    AuthenticationManager authenticationManager) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                // CORS 在 Gateway 层面处理，后端微服务不需要配置 CORS
-                .cors(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationManager(authenticationManager)
                 .authorizeHttpRequests(authorize -> authorize
@@ -77,6 +75,4 @@ public class UserSecurityConfig {
         return builder.build();
     }
 
-    // CORS 配置已移除 - 在微服务架构中，CORS 应该只在 Gateway 层面处理
-    // Gateway 已经配置了 CORS（GatewayCorsConfig），后端微服务不需要重复配置
 }
