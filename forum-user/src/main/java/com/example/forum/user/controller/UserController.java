@@ -109,13 +109,13 @@ public class UserController {
                 .sameSite("Lax")
                 .build();
 
+        // 安全优化：refreshToken仅通过HttpOnly Cookie传输，不在响应体中返回
+        // role信息已在JWT中加密存储，前端可通过/api/auth/me接口获取用户信息
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(new LoginResponse(
                         token,
-                        refreshToken.getToken(),
-                        user.getRole(),
                         Math.max(maxAgeSeconds, 0),
                         Math.max(refreshMaxAgeSeconds, 0)
                 ));
