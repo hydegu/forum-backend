@@ -141,8 +141,11 @@ public class AuthController {
             long accessMaxAge = Duration.ofMillis(jwtProperties.getUserTtl()).getSeconds();
             long refreshMaxAge = Duration.ofMillis(jwtProperties.getRefreshTtl()).getSeconds();
 
+            // 混合Token方案（业界推荐）：
+            // - accessToken: 非HttpOnly，前端可读取并解析JWT获取用户信息（短期有效，风险可控）
+            // - refreshToken: HttpOnly，前端无法访问，防止XSS攻击（长期有效，必须保护）
             ResponseCookie accessCookie = ResponseCookie.from(jwtProperties.getUserTokenName(), newAccessToken)
-                    .httpOnly(true)
+                    .httpOnly(false)  // 前端可访问，用于解析用户信息和角色
                     .secure(false)
                     .path("/")
                     .maxAge(accessMaxAge > 0 ? accessMaxAge : -1)
@@ -150,20 +153,20 @@ public class AuthController {
                     .build();
 
             ResponseCookie refreshCookie = ResponseCookie.from(jwtProperties.getRefreshTokenName(), newRefreshToken.getToken())
-                    .httpOnly(true)
+                    .httpOnly(true)  // 前端无法访问，仅由浏览器自动发送
                     .secure(false)
                     .path("/")
                     .maxAge(refreshMaxAge > 0 ? refreshMaxAge : -1)
                     .sameSite("Lax")
                     .build();
 
-            // 安全优化：refreshToken仅通过HttpOnly Cookie传输，不在响应体中返回
-            // role信息已在JWT中加密存储，前端可通过/api/auth/me接口获取用户信息
+            // 响应体返回新的accessToken，前端可存储并解析JWT获取用户信息
+            // refreshToken仅通过HttpOnly Cookie传输，不在响应体中返回
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                     .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                     .body(new LoginResponse(
-                            newAccessToken,
+                            newAccessToken,  // 前端可以从响应体获取并解析JWT
                             Math.max(accessMaxAge, 0),
                             Math.max(refreshMaxAge, 0)
                     ));
